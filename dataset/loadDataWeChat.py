@@ -99,7 +99,7 @@ def build_array(lines, vocab, num_steps):
     valid_len = (array != vocab['<pad>']).type(torch.int32).sum(1)
     return array, valid_len
 
-def load_data_weChat(data_size, batch_size, num_steps):
+def load_data_seq2seq(data_size, batch_size, num_steps):
     conversations, querys, answers = txt_to_text('/home/wcc/data/weChat/聊天记录')
     source = [tokenize(query) for query in querys[: data_size]]
     target = [tokenize(answer) for answer in answers[: data_size]]
@@ -113,4 +113,16 @@ def load_data_weChat(data_size, batch_size, num_steps):
     print(f'vocab_size: {len(vocab)}')
     return data_iter, vocab, querys[: data_size], answers[: data_size]
 
+def load_data_seq(data_size, batch_size, num_steps):
+    conversations, querys, answers = txt_to_text('/home/wcc/data/weChat/聊天记录')
+    source = [tokenize(query) for query in querys[: data_size]]
+    target = [tokenize(answer) for answer in answers[: data_size]]
+    vocab = Vocabulary(tokens=source + target, reserved_tokens=['<pad>', '<eos>', '<bos>'], min_freq = 0)
+    source_array, src_valid_len = build_array(source, vocab, num_steps)
+    target_array, tgt_valid_len = build_array(target, vocab, num_steps)
+    dataset = data.TensorDataset(source_array, src_valid_len, target_array, tgt_valid_len)
+    data_iter = data.DataLoader(dataset, batch_size = batch_size, shuffle = False)
 
+    print(f'conversation_size: {len(conversations)}')
+    print(f'vocab_size: {len(vocab)}')
+    return data_iter, vocab, querys[: data_size], answers[: data_size]

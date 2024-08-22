@@ -26,8 +26,8 @@ class PositionWiseFFN(nn.Module):
         self.dense2 = nn.Linear(num_hiddens, num_outputs)
 
     def forward(self, X):
-        return self.dense2(self.relu(self.dense1(X)))
-
+        # return self.dense2(self.relu(self.dense1(X)))
+        return X
 
 class AddNorm(nn.Module):
     def __init__(self, dropout, norm_shape):
@@ -61,9 +61,9 @@ class MultiHeadAttention(nn.Module):
         self.num_heads = num_heads
         self.dropout = nn.Dropout(dropout)
         self.attention = d2l.DotProductAttention(dropout)
-        self.W_q = nn.Linear(query_size, num_hiddens, bias = False)
-        self.W_k = nn.Linear(key_size, num_hiddens, bias = False)
-        self.W_v = nn.Linear(value_size, num_hiddens, bias = False)
+        self.W_q = nn.Sequential(nn.Linear(query_size, num_hiddens, bias = False), nn.ReLU(), nn.Linear(num_hiddens, num_hiddens, bias = False))
+        self.W_k = nn.Sequential(nn.Linear(key_size, num_hiddens, bias = False), nn.ReLU(), nn.Linear(num_hiddens, num_hiddens, bias = False))
+        self.W_v = nn.Sequential(nn.Linear(value_size, num_hiddens, bias = False), nn.ReLU(), nn.Linear(num_hiddens, num_hiddens, bias = False))
         self.W_o = nn.Linear(num_hiddens, num_hiddens, bias = False)
         # 默认最后输出大小为num_hiddens
 
@@ -138,14 +138,13 @@ class DecoderBlock(nn.Module):
         state[2][self.i] = key_values
         batch_size, num_steps, _ = X.shape
         if self.training:
-            dec_valid_lens = torch.arange(1, num_steps + 1, device=X.device).repeat(batch_size, 1)
+            dec_valid_lens = torch.arange(1, num_steps + 1, device = X.device).repeat(batch_size, 1)
         else:
             dec_valid_lens = None
         Y = self.addnorm1(X, self.attention1(X, key_values, key_values, dec_valid_lens))
         Z = self.addnorm2(Y, self.attention2(Y, enc_outputs, enc_outputs, enc_valid_lens))
         # enc_valid_lens是为了忽略'<pad>'，dec_valid_len是为了忽略未到达的时间步
         return self.addnorm3(Z, self.ffn(Z)), state
-
 
 class TransformerDecoder(d2l.Decoder):
     def __init__(self, vocab_size, query_size, key_size, value_size, mha_num_hiddens, ffn_num_hiddens, norm_shape,
