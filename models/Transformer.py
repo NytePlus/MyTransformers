@@ -26,8 +26,8 @@ class PositionWiseFFN(nn.Module):
         self.dense2 = nn.Linear(num_hiddens, num_outputs)
 
     def forward(self, X):
-        # return self.dense2(self.relu(self.dense1(X)))
-        return X
+        return self.dense2(self.relu(self.dense1(X)))
+        # return X
 
 class AddNorm(nn.Module):
     def __init__(self, dropout, norm_shape):
@@ -61,9 +61,12 @@ class MultiHeadAttention(nn.Module):
         self.num_heads = num_heads
         self.dropout = nn.Dropout(dropout)
         self.attention = d2l.DotProductAttention(dropout)
-        self.W_q = nn.Sequential(nn.Linear(query_size, num_hiddens, bias = False), nn.ReLU(), nn.Linear(num_hiddens, num_hiddens, bias = False))
-        self.W_k = nn.Sequential(nn.Linear(key_size, num_hiddens, bias = False), nn.ReLU(), nn.Linear(num_hiddens, num_hiddens, bias = False))
-        self.W_v = nn.Sequential(nn.Linear(value_size, num_hiddens, bias = False), nn.ReLU(), nn.Linear(num_hiddens, num_hiddens, bias = False))
+        # self.W_q = nn.Sequential(nn.Linear(query_size, num_hiddens, bias = False), nn.ReLU(), nn.Linear(num_hiddens, num_hiddens, bias = False))
+        # self.W_k = nn.Sequential(nn.Linear(key_size, num_hiddens, bias = False), nn.ReLU(), nn.Linear(num_hiddens, num_hiddens, bias = False))
+        # self.W_v = nn.Sequential(nn.Linear(value_size, num_hiddens, bias = False), nn.ReLU(), nn.Linear(num_hiddens, num_hiddens, bias = False))
+        self.W_q = nn.Linear(query_size, num_hiddens, bias = False)
+        self.W_k = nn.Linear(key_size, num_hiddens, bias = False)
+        self.W_v = nn.Linear(value_size, num_hiddens, bias = False)
         self.W_o = nn.Linear(num_hiddens, num_hiddens, bias = False)
         # 默认最后输出大小为num_hiddens
 

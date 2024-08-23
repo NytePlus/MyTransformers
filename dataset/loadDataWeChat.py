@@ -5,13 +5,13 @@ import torch
 from torch.utils import data
 
 class Vocabulary():
-    def __init__(self, tokens=None, reserved_tokens=None, min_freq=0):
+    def __init__(self, tokens = None, reserved_tokens = None, min_freq = 0):
         if not tokens:
             tokens = []
         if not reserved_tokens:
             reserved_tokens = []
         counter = count_corpus(tokens)
-        tokens_freq = sorted(counter.items(), key=lambda x: x[1], reverse=True)
+        tokens_freq = sorted(counter.items(), key = lambda x: x[1], reverse = True)
         self.unk, uniq_tokens = 0, ['<unk>'] + reserved_tokens
         uniq_tokens += [token for token, freq in tokens_freq
                         if token not in uniq_tokens and freq >= min_freq]
@@ -47,7 +47,6 @@ def tokenize(text):
     for area in emoji_pos:
         for i in range(pre_i, area[0]):
             tokens.append(text[i])
-        # print(list(range(* area)))
         tokens.append(text[area[0]: area[1]])
         pre_i = area[1]
     return tokens + [token for token in text[pre_i:]]
@@ -103,26 +102,24 @@ def load_data_seq2seq(data_size, batch_size, num_steps):
     conversations, querys, answers = txt_to_text('/home/wcc/data/weChat/聊天记录')
     source = [tokenize(query) for query in querys[: data_size]]
     target = [tokenize(answer) for answer in answers[: data_size]]
-    vocab = Vocabulary(tokens=source + target, reserved_tokens=['<pad>', '<eos>', '<bos>'], min_freq = 0)
+    vocab = Vocabulary(tokens = source + target, reserved_tokens=['<pad>', '<eos>', '<bos>'], min_freq = 0)
     source_array, src_valid_len = build_array(source, vocab, num_steps)
     target_array, tgt_valid_len = build_array(target, vocab, num_steps)
     dataset = data.TensorDataset(source_array, src_valid_len, target_array, tgt_valid_len)
     data_iter = data.DataLoader(dataset, batch_size = batch_size, shuffle = False)
 
-    print(f'conversation_size: {len(conversations)}')
-    print(f'vocab_size: {len(vocab)}')
+    print(f'num_tokens: {len([token for conversation in conversations for token in conversation[0] + conversation[1]])}\nvocab_size: {len(vocab)}')
     return data_iter, vocab, querys[: data_size], answers[: data_size]
 
 def load_data_seq(data_size, batch_size, num_steps):
     conversations, querys, answers = txt_to_text('/home/wcc/data/weChat/聊天记录')
     source = [tokenize(query) for query in querys[: data_size]]
     target = [tokenize(answer) for answer in answers[: data_size]]
-    vocab = Vocabulary(tokens=source + target, reserved_tokens=['<pad>', '<eos>', '<bos>'], min_freq = 0)
+    vocab = Vocabulary(tokens = source + target, reserved_tokens=['<pad>', '<eos>', '<bos>'], min_freq = 0)
     source_array, src_valid_len = build_array(source, vocab, num_steps)
     target_array, tgt_valid_len = build_array(target, vocab, num_steps)
     dataset = data.TensorDataset(source_array, src_valid_len, target_array, tgt_valid_len)
     data_iter = data.DataLoader(dataset, batch_size = batch_size, shuffle = False)
 
-    print(f'conversation_size: {len(conversations)}')
-    print(f'vocab_size: {len(vocab)}')
+    print(f'{len(conversations[0][0])}num_tokens: {len([token for conversation in conversations for token in conversation[0] + conversation[1]])}\nvocab_size: {len(vocab)}')
     return data_iter, vocab, querys[: data_size], answers[: data_size]

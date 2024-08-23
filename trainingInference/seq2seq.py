@@ -47,10 +47,10 @@ def train_seq2seq(net, data_iter, lrs, nums_epochs, tgt_vocab, devices, log_dir 
                 with torch.no_grad():
                     metric.add(l.sum(), num_tokens)
             print(metric[0] / metric[1])
+            from main import edition
             if (epoch + 1) % 10 == 0:
-                writer.add_scalar('MyTransformers-a1 Loss', metric[0] / metric[1], epoch + finished_epochs)
+                writer.add_scalar(f'MyTransformers-{edition} Loss', metric[0] / metric[1], epoch + finished_epochs)
             if (epoch + 1) % 100 == 0:
-                from main import edition
                 torch.save(net.module.state_dict(), f'MyTransformers-{edition}.params')
                 print(f'epoch {finished_epochs + epoch + 1} finished.')
     writer.close()
@@ -60,7 +60,7 @@ def predict_seq2seq(net, src_sentence, src_vocab, tgt_vocab, num_steps, devices,
     net.eval()
     src_tokens = src_vocab[tokenize(src_sentence)] + [src_vocab['<eos>']]
     enc_valid_len = torch.tensor([len(src_tokens)], device = devices[0])
-    src_tokens = truncate_pad(src_tokens, num_steps, src_vocab['<pad>'])
+    src_tokens = truncate_pad(src_tokens, src_vocab['<pad>'], num_steps)
 
     enc_X = torch.unsqueeze(torch.tensor(src_tokens, dtype=torch.long, device = devices[0]), dim = 0)
     enc_outputs = net.encoder(enc_X, enc_valid_len)
