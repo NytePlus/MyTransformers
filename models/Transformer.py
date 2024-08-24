@@ -3,6 +3,7 @@ import math
 from torch import nn
 from d2l import torch as d2l
 
+#在predict过程中，这种PositionEncoding的写法是有误的，会导致永远使用第一个位置的位置编码
 class PositionalEncoding(nn.Module):
     def __init__(self, num_hiddens, dropout, max_len = 1000):
         super().__init__()
@@ -132,6 +133,7 @@ class DecoderBlock(nn.Module):
         self.addnorm3 = AddNorm(dropout, norm_shape)
 
     def forward(self, X, state):
+        print(f'X.shape: {X.shape}')
         # state = [enc_outputs, enc_valid_lens, 每个解码块上一时间步的输出]
         enc_outputs, enc_valid_lens = state[0], state[1]
         if state[2][self.i] == None:

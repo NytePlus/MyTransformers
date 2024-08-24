@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from Transformer import MultiHeadAttention, AddNorm, PositionWiseFFN
+from .Transformer import MultiHeadAttention, AddNorm, PositionWiseFFN
 
 class PositionalEncoding(nn.Module):
     def __init__(self, num_hiddens, dropout, max_len = 1000):
@@ -8,8 +8,11 @@ class PositionalEncoding(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.P = nn.Parameter(torch.randn(1, max_len, num_hiddens))
 
-    def forward(self, X):
-        X = X + self.P[:, : X.shape[1], :].to(X.device)
+    def forward(self, X, pos = None):
+        if self.training:
+            X = X + self.P[:, : X.shape[1], :].to(X.device)
+        else:
+            X = X + self.P[:, pos : pos + 1, :].to(X.device)
         return self.dropout(X)
 
 class DecoderBlock(nn.Module):
@@ -54,12 +57,14 @@ class DecoderOnly(nn.Module):
         return [None] * self.num_blocks
 
     def forward(self, X, state):
-        X = self.pos_encoding(self.embed(X))
+        if self.training:
+            X = self.pos_encoding(self.embed(X))
+        else:
+            X = self.pos_encoding(self.embed(X), state[0].shape[1])
         self._attention_weights = [[None] * self.num_blocks for _ in range(2)]
         for i, blk in enumerate(self.blks):
             X, state = blk(X, state)
             self._attention_weights[0][i] = blk.attention1.attention.attention_weights
-            self._attention_weights[1][i] = blk.attention2.attention.attention_weights
         return self.dense(X), state
 
     @property

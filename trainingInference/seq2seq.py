@@ -20,6 +20,7 @@ def train_seq2seq(net, data_iter, lrs, nums_epochs, tgt_vocab, devices, log_dir 
     else:
         net.load_state_dict(torch.load(pre_train))
     net = nn.DataParallel(net, device_ids = devices).to(devices[0])
+    #这里使用中文版d2l的损失函数，写法有误
     loss = d2l.MaskedSoftmaxCELoss()
     writer = SummaryWriter(log_dir = log_dir)
     net.train()
@@ -70,6 +71,7 @@ def predict_seq2seq(net, src_sentence, src_vocab, tgt_vocab, num_steps, devices,
     output_seq, attention_weight_seq = [], []
     for _ in range(num_steps):
         Y, dec_state = net.decoder(dec_X, dec_state)
+        print(f'dec_X.shape: {dec_X.shape}')
         dec_X = Y.argmax(dim = 2)
         pred = dec_X.squeeze(dim = 0).type(torch.int32).item()
         if save_attention_weights:

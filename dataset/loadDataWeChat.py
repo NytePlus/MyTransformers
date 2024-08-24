@@ -41,10 +41,12 @@ def count_corpus(tokens):
 
 
 def tokenize(text):
-    tokens, emoji_pos, pre_i = [], [], 0
+    tokens, reser_pos, pre_i = [], [], 0
     for m in re.finditer('\[(.*?)\]', text):
-        emoji_pos.append([m.start(), m.end()])
-    for area in emoji_pos:
+        reser_pos.append([m.start(), m.end()])
+    for m in re.finditer('<(.*?)>', text):
+        reser_pos.append([m.start(), m.end()])
+    for area in reser_pos:
         for i in range(pre_i, area[0]):
             tokens.append(text[i])
         tokens.append(text[area[0]: area[1]])

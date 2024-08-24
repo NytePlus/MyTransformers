@@ -14,16 +14,22 @@ class MaskedSoftmaxCELoss(nn.CrossEntropyLoss):
         self.reduction = 'none'
         unweighted_loss = super(MaskedSoftmaxCELoss, self).forward(
             pred.permute(0, 2, 1), label)
-        weighted_loss = (unweighted_loss * weights).mean(dim = 1)
+        weighted_loss = (unweighted_loss * weights).sum(dim = 1)
         return weighted_loss
 
     def sequence_mask(self, array, masks):
-        for i in range(masks.shape[0]):
-            for j in range(len(masks[i])):
-                array[i][masks[i][j][0] : masks[i][j][1]] = 0
+        if len(masks.shape) == 1:
+            maxlen = array.shape[1]
+            mask = torch.arange((maxlen), dtype = torch.float32,
+                                device = array.device)[None, :] < masks[:, None]
+            array[~mask] = 0
+        else :
+            for i in range(masks.shape[0]):
+                for j in range(len(masks[i])):
+                    array[i][masks[i][j][0] : masks[i][j][1]] = 0
         return array
 
-def pretrain(net, data_iter, lrs, nums_epochs, vocab, devices, log_dir = f'/home/wcc/MyTransormers', pre_train = None):
+def pretrain(net, data_iter, lrs, nums_epochs, device, edition, log_dir = f'/home/wcc/MyTransormers', pre_train = None):
     def xavier_init_weights(m):
         if type(m) == nn.Linear:
             nn.init.xavier_uniform_(m.weight)
@@ -36,23 +42,22 @@ def pretrain(net, data_iter, lrs, nums_epochs, vocab, devices, log_dir = f'/home
         net.apply(xavier_init_weights)
     else:
         net.load_state_dict(torch.load(pre_train))
-    net = nn.DataParallel(net, device_ids = devices).to(devices[0])
-    loss = nn.CrossEntropyLoss(reduction = 'none')
+    loss = MaskedSoftmaxCELoss()
     writer = SummaryWriter(log_dir = log_dir)
+    net.to(device)
     net.train()
     for i, (lr, num_epochs) in enumerate(zip(lrs, nums_epochs)):
         updater = torch.optim.Adam(net.parameters(), lr = lr)
-        finished_epochs = sum(nums_epochs[:i])
+        finished_epochs = sum(nums_epochs[:i]) + 18000
         for epoch in range(num_epochs):
             timer = d2l.Timer()
             metric = d2l.Accumulator(2)
             for batch in data_iter:
-
-                bos = torch.tensor([vocab['<bos>']] * Y.shape[0], device = devices[0]).reshape(-1, 1)
-                dec_input = torch.cat([bos, Y[:, : -1]], 1)
-                Y_hat = net(X, net.init_state())
-                l = loss(Y_hat, Y)
-
+                X, Y, valid_lens = batch[0][:, : -1].to(device), batch[0][:, 1 :].to(device), batch[1].to(device)
+                Y_hat, _ = net(X, net.init_state())
+                # from main import pretrain_vocab
+                # print(f'Y[0][0]: {"".join([pretrain_vocab.to_token(t) for t in Y[0]])} Y_hat[0][0]: {"".join([pretrain_vocab.to_token(t) for t in Y_hat[0].argmax(dim = 1)])} Y_hat[0].max: {Y_hat[0].max()} Y_hat[0][0][Y[0][0]]: {Y_hat[0][0][Y[0][0]]}')
+                l = loss(Y_hat, Y, valid_lens)
                 updater.zero_grad()
 
                 l.sum().backward()
@@ -60,15 +65,39 @@ def pretrain(net, data_iter, lrs, nums_epochs, vocab, devices, log_dir = f'/home
                     assert not math.isnan(i), 'loss apear not a number(nan).'
                 updater.step()
 
-                num_tokens = Y_valid_len.sum()
+                num_tokens = valid_lens.sum()
                 with torch.no_grad():
                     metric.add(l.sum(), num_tokens)
             print(metric[0] / metric[1])
             if (epoch + 1) % 10 == 0:
-                writer.add_scalar('MyTransformers-a1 Loss', metric[0] / metric[1], epoch + finished_epochs)
+                writer.add_scalar(f'MyTransformers-{edition} Loss', metric[0] / metric[1], epoch + finished_epochs)
             if (epoch + 1) % 100 == 0:
                 from main import edition
-                torch.save(net.module.state_dict(), f'MyTransformers-{edition}.params')
+                torch.save(net.state_dict(), f'MyTransformers-{edition}.params')
                 print(f'epoch {finished_epochs + epoch + 1} finished.')
     writer.close()
-    print(f'loss {metric[0] / metric[1] : .3f}, {metric[1] / timer.stop() : .1f} tokens/sec on {str(devices)}')
+    print(f'loss {metric[0] / metric[1] : .3f}, {metric[1] / timer.stop() : .1f} tokens/sec on {str(device)}')
+
+def predict(net, input, history, vocab, num_steps, device, save_attention_weights = False):
+    net.train()
+    tokens = vocab[tokenize(history + input)]
+
+    X = torch.unsqueeze(torch.tensor(tokens, dtype = torch.long, device = device), dim = 0)
+    X, state = net(X, net.init_state())
+    print(''.join([vocab.to_token(t) for t in X[0].argmax(dim = 1)]))
+    X = X[:, -1 :].argmax(dim = 2)
+
+    net.eval()
+    output_seq, attention_weight_seq = [], []
+    for _ in range(num_steps):
+        print(f'out: {vocab.to_token(X.squeeze(dim = 0).type(torch.int32).item())}')
+        Y, state = net(X, state)
+        X = Y.argmax(dim = 2)
+        pred = X.squeeze(dim = 0).type(torch.int32).item()
+        if save_attention_weights:
+            attention_weight_seq.append(net.decoder.attention_weights)
+        if pred == vocab['<eos>'] or len(history) + len(output_seq) > num_steps:
+            break
+        output_seq.append(pred)
+    output = ''.join(vocab.to_token(output_seq))
+    return output, history + output, attention_weight_seq

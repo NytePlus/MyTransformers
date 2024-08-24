@@ -1,8 +1,9 @@
 import os
 import re
+import torch
 from tqdm import tqdm
 from torch.utils import data
-from .loadDataWeChat import Vocabulary, tokenize
+from .loadDataWeChat import Vocabulary, tokenize, build_array
 
 num_steps = 128
 
@@ -56,10 +57,14 @@ def txt_to_text(data_dir, num_steps):
 def load_data_dairy(batch_size, num_steps):
     paragraphs = txt_to_text('./rawData/dairy', num_steps)
     tokens = [tokenize(paragraph) for paragraph in paragraphs]
-    vocab = Vocabulary(tokens = tokens, reserved_tokens = ['<usr>', '<nyt>', '<eos>'], min_freq = 0)
-
-    dataset = data.TensorDataset()
+    vocab = Vocabulary(tokens = tokens, reserved_tokens = ['<usr>', '<gpt>', '<eos>', '<pad>'], min_freq = 0)
+    array, valid_lens = build_array(tokens, vocab, num_steps)
+    dataset = data.TensorDataset(array, valid_lens)
     data_iter = data.DataLoader(dataset, batch_size = batch_size, shuffle = False)
 
     print(f'num_tokens: {len([token for paragraph in paragraphs for token in paragraph])}\nvocab_size: {len(vocab)}')
     return data_iter, vocab
+
+if __name__ == '__main__':
+    # preprocess('../rawData/dairy')
+    print('')
