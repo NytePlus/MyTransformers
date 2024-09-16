@@ -6,7 +6,7 @@ from d2l import torch as d2l
 from dataset.loadDataWeChat import tokenize, truncate_pad
 from torch.utils.tensorboard import SummaryWriter
 
-def train_seq2seq(net, data_iter, lrs, nums_epochs, tgt_vocab, devices, log_dir = f'/home/wcc/MyTransormers', pre_train = None):
+def train_seq2seq(net, data_iter, lrs, nums_epochs, tgt_vocab, devices, log_dir = f'/home/wcc/logs/MyTransormers', pre_train = None):
     def xavier_init_weights(m):
         if type(m) == nn.Linear:
             nn.init.xavier_uniform_(m.weight)

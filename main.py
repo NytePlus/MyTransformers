@@ -16,7 +16,7 @@ from trainingInference.pretrainSft import pretrain, predict
 num, edition, data_size = 36, 'b', 10000
 num_hiddens, num_layers, dropout = num, 12, 0
 batch_size, num_steps, pretrain_num_steps = 64, 16, 128
-lrs, nums_epochs, device = [0.0005, 0.0001, 0.00001, 0.000001], [0, 0, 4500, 4500], d2l.try_gpu(6)
+lrs, nums_epochs, device = [0.0005, 0.0001, 0.00001, 0.000001], [10000, 10000, 10000, 10000], d2l.try_gpu(6)
 ffn_num_input, ffn_num_hiddens, num_heads = num, num, 12
 key_size, query_size, value_size = num, num, num
 norm_shape = [num]
@@ -36,7 +36,7 @@ DecoderOnlyNet = DecoderOnly(len(pretrain_vocab), query_size, key_size, value_si
 
 if __name__ == '__main__':
     # train_seq2seq(EncoderDecoderNet, data_iter, lrs, nums_epochs, vocab, [device], pre_train = None)
-    pretrain(DecoderOnlyNet, pretrain_data_iter, lrs, nums_epochs, device, edition, pre_train = f'MyTransformers-{edition}.params')
+    pretrain(DecoderOnlyNet, pretrain_data_iter, lrs, nums_epochs, device, edition, pre_train = None)
 
     # EncoderDecoderNet.load_state_dict(torch.load(f'MyTransformers-a.params'))
     # EncoderDecoderNet = EncoderDecoderNet.to(device)

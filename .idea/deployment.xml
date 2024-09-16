@@ -5,7 +5,7 @@
       <paths name="wcc@202.120.47.58:15876 password">
         <serverdata>
           <mappings>
-            <mapping deploy="/tmp/pycharm_project_572" local="$PROJECT_DIR$" />
+            <mapping deploy="/home/wcc/MyTransformers" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>
@@ -66,6 +66,20 @@
         </serverdata>
       </paths>
       <paths name="wcc@202.120.6.211:13000 password (2)">
+        <serverdata>
+          <mappings>
+            <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="wcc@202.120.6.211:13000 password (3)">
+        <serverdata>
+          <mappings>
+            <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="wcc@202.120.6.211:13003 password">
         <serverdata>
           <mappings>
             <mapping local="$PROJECT_DIR$" web="/" />

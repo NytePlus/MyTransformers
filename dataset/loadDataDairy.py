@@ -3,7 +3,7 @@ import re
 import torch
 from tqdm import tqdm
 from torch.utils import data
-from .loadDataWeChat import Vocabulary, tokenize, build_array
+from dataset.loadDataWeChat import Vocabulary, tokenize, build_array
 
 num_steps = 128
 
@@ -39,6 +39,8 @@ def txt_to_text(data_dir, num_steps):
                     continue
                 if re.match('\d+月\d+日 星期\w \w+\n', line) is not None or re.match('\d+月\d+日 星期？ ？\n', line) is not None:
                     data.append('')
+                elif re.match('第[\u4e00-\u9fff]天\d+年\d+月\d+日', line) or re.match('\d+年', line) is not None:
+                    data.append('')
                 elif len(data[-1] + line) <= num_steps:
                     data[-1] += line
                 elif len(line) < num_steps:
@@ -66,5 +68,5 @@ def load_data_dairy(batch_size, num_steps):
     return data_iter, vocab
 
 if __name__ == '__main__':
-    # preprocess('../rawData/dairy')
+    preprocess('../rawData/dairy')
     print('')

@@ -5,6 +5,12 @@ from d2l import torch as d2l
 from dataset.loadDataWeChat import tokenize, truncate_pad
 from torch.utils.tensorboard import SummaryWriter
 
+def evaluate_accuracy(Y_hat, Y, valid_len):
+    weights = torch.ones_like(Y)
+    mask = torch.arange((Y.shape[1]), dtype = torch.float32, device = Y.device)[None, :] < valid_len[:, None]
+    weights[~ mask] = 0
+    return ((Y_hat.argmax(dim = -1) == Y).int() * weights).sum()
+
 class MaskedSoftmaxCELoss(nn.CrossEntropyLoss):
     # pred [batch_size, num_steps, vocab_size]
     # label [batch_size, num_steps]
@@ -29,7 +35,7 @@ class MaskedSoftmaxCELoss(nn.CrossEntropyLoss):
                     array[i][masks[i][j][0] : masks[i][j][1]] = 0
         return array
 
-def pretrain(net, data_iter, lrs, nums_epochs, device, edition, log_dir = f'/home/wcc/MyTransormers', pre_train = None):
+def pretrain(net, data_iter, lrs, nums_epochs, device, edition, log_dir = f'/home/wcc/logs/MyTransormers', pre_train = None):
     def xavier_init_weights(m):
         if type(m) == nn.Linear:
             nn.init.xavier_uniform_(m.weight)
@@ -48,16 +54,17 @@ def pretrain(net, data_iter, lrs, nums_epochs, device, edition, log_dir = f'/hom
     net.train()
     for i, (lr, num_epochs) in enumerate(zip(lrs, nums_epochs)):
         updater = torch.optim.Adam(net.parameters(), lr = lr)
-        finished_epochs = sum(nums_epochs[:i]) + 18000
+        finished_epochs = sum(nums_epochs[:i])
         for epoch in range(num_epochs):
             timer = d2l.Timer()
-            metric = d2l.Accumulator(2)
+            metric = d2l.Accumulator(3)
             for batch in data_iter:
                 X, Y, valid_lens = batch[0][:, : -1].to(device), batch[0][:, 1 :].to(device), batch[1].to(device)
                 Y_hat, _ = net(X, net.init_state())
                 # from main import pretrain_vocab
                 # print(f'Y[0][0]: {"".join([pretrain_vocab.to_token(t) for t in Y[0]])} Y_hat[0][0]: {"".join([pretrain_vocab.to_token(t) for t in Y_hat[0].argmax(dim = 1)])} Y_hat[0].max: {Y_hat[0].max()} Y_hat[0][0][Y[0][0]]: {Y_hat[0][0][Y[0][0]]}')
                 l = loss(Y_hat, Y, valid_lens)
+                acc = evaluate_accuracy(Y_hat, Y, valid_lens)
                 updater.zero_grad()
 
                 l.sum().backward()
@@ -67,10 +74,11 @@ def pretrain(net, data_iter, lrs, nums_epochs, device, edition, log_dir = f'/hom
 
                 num_tokens = valid_lens.sum()
                 with torch.no_grad():
-                    metric.add(l.sum(), num_tokens)
-            print(metric[0] / metric[1])
+                    metric.add(l.sum(), acc, num_tokens)
+            print(metric[0] / metric[2], metric[1] / metric[2])
             if (epoch + 1) % 10 == 0:
-                writer.add_scalar(f'MyTransformers-{edition} Loss', metric[0] / metric[1], epoch + finished_epochs)
+                writer.add_scalar(f'MyTransformers-{edition} Loss', metric[0] / metric[2], epoch + finished_epochs)
+                writer.add_scalar(f'MyTransformers-{edition} Accuracy', metric[1] / metric[2], epoch + finished_epochs)
             if (epoch + 1) % 100 == 0:
                 from main import edition
                 torch.save(net.state_dict(), f'MyTransformers-{edition}.params')
