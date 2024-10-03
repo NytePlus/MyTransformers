@@ -56,10 +56,10 @@ def txt_to_text(data_dir, num_steps):
                     data.append(line)
     return data
 
-def load_data_dairy(batch_size, num_steps):
+def load_data_dairy(save_dir, batch_size, num_steps):
     paragraphs = txt_to_text('./rawData/dairy', num_steps)
     tokens = [tokenize(paragraph) for paragraph in paragraphs]
-    vocab = Vocabulary(tokens = tokens, reserved_tokens = ['<usr>', '<gpt>', '<eos>', '<pad>'], min_freq = 0)
+    vocab = Vocabulary(save_dir, tokens = tokens, reserved_tokens = ['<usr>', '<gpt>', '<eos>', '<pad>'], min_freq = 0)
     array, valid_lens = build_array(tokens, vocab, num_steps)
     dataset = data.TensorDataset(array, valid_lens)
     data_iter = data.DataLoader(dataset, batch_size = batch_size, shuffle = False)

@@ -2,10 +2,11 @@ import os
 import re
 import collections
 import torch
+import json
 from torch.utils import data
 
 class Vocabulary():
-    def __init__(self, tokens = None, reserved_tokens = None, min_freq = 0):
+    def __init__(self, save_dir, tokens = None, reserved_tokens = None, min_freq = 0):
         if not tokens:
             tokens = []
         if not reserved_tokens:
@@ -19,6 +20,8 @@ class Vocabulary():
         for token in uniq_tokens:
             self.token_to_id[token] = len(self.id_to_token)
             self.id_to_token.append(token)
+        with open(save_dir, 'w') as json_file:
+            json.dump({"id_to_token": self.id_to_token, "token_to_id": self.token_to_id}, json_file, indent=4)
 
     def __getitem__(self, token):
         if not isinstance(token, (tuple, list)):
