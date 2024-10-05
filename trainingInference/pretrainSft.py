@@ -35,7 +35,7 @@ class MaskedSoftmaxCELoss(nn.CrossEntropyLoss):
                     array[i][masks[i][j][0] : masks[i][j][1]] = 0
         return array
 
-def pretrain(net, data_iter, lrs, nums_epochs, device, edition, log_dir = f'/home/wcc/logs/MyTransormers', pre_train = None):
+def pretrain(net, data_iter, lrs, nums_epochs, device, edition, log_dir = f'/home/wcc/logs/MyTransformers', pre_train = None):
     def xavier_init_weights(m):
         if type(m) == nn.Linear:
             nn.init.xavier_uniform_(m.weight)
