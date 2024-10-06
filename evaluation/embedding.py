@@ -1,5 +1,4 @@
 import torch
-from models.decoderOnly import DecoderOnly
 from torch.utils.tensorboard import SummaryWriter
 
 '''

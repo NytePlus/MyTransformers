@@ -1,5 +1,4 @@
 import torch
-import torch.nn.functional as F
 from torch import nn
 from .Transformer import MultiHeadAttention, AddNorm, PositionWiseFFN
 
@@ -58,11 +57,10 @@ class DecoderOnly(nn.Module):
         return [None] * self.num_blocks
 
     def forward(self, X, state):
-        embed = F.normalize(self.embed(X), p=2, dim=1)
         if self.training:
-            X = self.pos_encoding(embed)
+            X = self.pos_encoding(self.embed(X))
         else:
-            X = self.pos_encoding(embed, state[0].shape[1])
+            X = self.pos_encoding(self.embed(X), state[0].shape[1])
         self._attention_weights = [[None] * self.num_blocks for _ in range(2)]
         for i, blk in enumerate(self.blks):
             X, state = blk(X, state)

@@ -20,7 +20,7 @@ class MaskedSoftmaxCELoss(nn.CrossEntropyLoss):
         self.reduction = 'none'
         unweighted_loss = super(MaskedSoftmaxCELoss, self).forward(
             pred.permute(0, 2, 1), label)
-        weighted_loss = (unweighted_loss * weights).sum(dim = 1)
+        weighted_loss = (unweighted_loss * weights)
         return weighted_loss
 
     def sequence_mask(self, array, masks):
@@ -47,7 +47,7 @@ def pretrain(net, data_iter, lrs, nums_epochs, device, edition, log_dir = f'/hom
     if pre_train == None:
         net.apply(xavier_init_weights)
     else:
-        net.load_state_dict(torch.load(pre_train))
+        net.load_state_dict(torch.load(pre_train), strict = False)
     loss = MaskedSoftmaxCELoss()
     writer = SummaryWriter(log_dir = log_dir)
     net.to(device)
@@ -68,8 +68,7 @@ def pretrain(net, data_iter, lrs, nums_epochs, device, edition, log_dir = f'/hom
                 updater.zero_grad()
 
                 l.sum().backward()
-                for i in l:
-                    assert not math.isnan(i), 'loss apear not a number(nan).'
+                assert not torch.isnan(l).any(), 'loss apear not a number(nan).'
                 updater.step()
 
                 num_tokens = valid_lens.sum()

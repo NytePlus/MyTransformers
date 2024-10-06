@@ -7,22 +7,23 @@ from dataset.loadDataWeChat import load_data_seq2seq
 from dataset.loadDataDairy import load_data_dairy
 from trainingInference.seq2seq import train_seq2seq, predict_seq2seq, bleu
 from trainingInference.pretrainSft import pretrain, predict
-from evaluation.embedding import visualize_embedding_norm
+from evaluation.accuracyAndStep import visualize_acc_step
 
 #a Encoder+Decoder
 #|  init
 #|1 MHA的线性变换修改为MLP，删除FFN
 #b Decoder Only
-#|  num_layers=12, lr=0.0005...
+#|  num_layers=12, lr=0.0005..., 只更新错误的部分的损失
 #|1 num_layers=32, lr=0.005...
 #|2 num_layers=6, lr=0.0005...
 #|3 按照b2配置，词向量归一化
+#|4 num_layers=20, init b
 
 #num_hiddens/num_heads必须为整数
-num, edition, data_size = 36, 'b3', 10000
-num_hiddens, num_layers, dropout = num, 6, 0
+num, edition, data_size = 36, 'b4', 10000
+num_hiddens, num_layers, dropout = num, 20, 0
 batch_size, num_steps, pretrain_num_steps = 64, 16, 128
-lrs, nums_epochs, device = [0.0005, 0.0001, 0.00001, 0.000002], [10000, 10000, 55000, 0], d2l.try_gpu(7)
+lrs, nums_epochs, device = [0.0005, 0.0001, 0.00001, 0.000001], [10000, 10000, 20000, 0], d2l.try_gpu(7)
 ffn_num_input, ffn_num_hiddens, num_heads = num, num, 12
 key_size, query_size, value_size = num, num, num
 norm_shape = [num]
@@ -36,15 +37,13 @@ pretrain_data_iter, pretrain_vocab = load_data_dairy(f'pretrain.tokenizer', batc
 #                              num_heads, num_layers, dropout)
 # EncoderDecoderNet = d2l.EncoderDecoder(encoder, decoder)
 
-EvalEmbeddingNet = DecoderOnly(len(pretrain_vocab), query_size, key_size, value_size, num_hiddens, ffn_num_hiddens, norm_shape,
-                             num_heads, 12, dropout)
 DecoderOnlyNet = DecoderOnly(len(pretrain_vocab), query_size, key_size, value_size, num_hiddens, ffn_num_hiddens, norm_shape,
                              num_heads, num_layers, dropout)
 
 
 if __name__ == '__main__':
     # train_seq2seq(EncoderDecoderNet, data_iter, lrs, nums_epochs, vocab, [device], pre_train = None)
-    pretrain(DecoderOnlyNet, pretrain_data_iter, lrs, nums_epochs, device, edition, pre_train = None)
+    pretrain(DecoderOnlyNet, pretrain_data_iter, lrs, nums_epochs, device, edition, pre_train = f'MyTransformers-b.params')
 
     # EncoderDecoderNet.load_state_dict(torch.load(f'MyTransformers-a.params'))
     # EncoderDecoderNet = EncoderDecoderNet.to(device)
