@@ -7,13 +7,18 @@ from torch.utils import data
 
 class Vocabulary():
     def __init__(self, save_dir, tokens = None, reserved_tokens = None, min_freq = 0):
+        self.unk = 0
         if not tokens:
-            tokens = []
+            with open(save_dir, 'r') as json_file:
+                data = json.load(json_file)
+                self.id_to_token = data["id_to_token"]
+                self.token_to_id = data["token_to_id"]
+            return
         if not reserved_tokens:
             reserved_tokens = []
         counter = count_corpus(tokens)
         tokens_freq = sorted(counter.items(), key = lambda x: x[1], reverse = True)
-        self.unk, uniq_tokens = 0, ['<unk>'] + reserved_tokens
+        uniq_tokens = ['<unk>'] + reserved_tokens
         uniq_tokens += [token for token, freq in tokens_freq
                         if token not in uniq_tokens and freq >= min_freq]
         self.id_to_token, self.token_to_id = [], dict()

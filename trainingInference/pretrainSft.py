@@ -1,4 +1,3 @@
-import math
 import torch
 from torch import nn
 from d2l import torch as d2l
@@ -80,7 +79,7 @@ def pretrain(net, data_iter, lrs, nums_epochs, device, edition, log_dir = f'/hom
                 writer.add_scalar(f'MyTransformers-{edition} Accuracy', metric[1] / metric[2], epoch + finished_epochs)
             if (epoch + 1) % 100 == 0:
                 from main import edition
-                torch.save(net.state_dict(), f'MyTransformers-{edition}.params')
+                torch.save(net.state_dict(), f'parameters/MyTransformers-{edition}.params')
                 print(f'epoch {finished_epochs + epoch + 1} finished.')
     writer.close()
     print(f'loss {metric[0] / metric[1] : .3f}, {metric[1] / timer.stop() : .1f} tokens/sec on {str(device)}')
@@ -91,13 +90,12 @@ def predict(net, input, history, vocab, num_steps, device, save_attention_weight
 
     X = torch.unsqueeze(torch.tensor(tokens, dtype = torch.long, device = device), dim = 0)
     X, state = net(X, net.init_state())
-    print(''.join([vocab.to_token(t) for t in X[0].argmax(dim = 1)]))
+    # print(''.join([vocab.to_token(t) for t in X[0].argmax(dim = 1)]))
     X = X[:, -1 :].argmax(dim = 2)
 
     net.eval()
-    output_seq, attention_weight_seq = [], []
+    output_seq, attention_weight_seq = [X], []
     for _ in range(num_steps):
-        print(f'out: {vocab.to_token(X.squeeze(dim = 0).type(torch.int32).item())}')
         Y, state = net(X, state)
         X = Y.argmax(dim = 2)
         pred = X.squeeze(dim = 0).type(torch.int32).item()
