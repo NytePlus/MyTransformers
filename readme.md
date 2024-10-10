@@ -1,7 +1,23 @@
-# 🌟 **MyTransformers 项目** 🌟
+# 🌟 **MyTransformers** 🌟
 
 **项目概述**  
 该项目的目标是利用个人数据（如日记和微信聊天记录）训练一个自定义的 GPT 模型 🤖📓。模型采用纯解码器的 Transformer 架构 📐，旨在探索使用私人数据预训练语言模型的效果 🌍，尽管此举在学术或商业上没有明显的价值，但对于个人成长具有极大的意义 💪✨。
+
+---
+
+## 🥰**Get Started**🥰
+
+### Environment Setup
+```bash
+git clone https://github.com/NytePlus/MyTransformers.git
+conda env create -n MyTransformers python=3.8
+pip install d2l torch
+```
+### Start Chat
+
+```bash
+python main.py
+```
 
 ---
 
